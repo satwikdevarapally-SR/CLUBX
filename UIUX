@@ -1,0 +1,1914 @@
+<!doctype html>
+<html lang="en" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClubX - College Club Management</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+        body {
+            box-sizing: border-box;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+
+        .app-container {
+            min-height: 100%;
+            width: 100%;
+        }
+
+        .sidebar {
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-item {
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-item:hover {
+            transform: translateX(4px);
+        }
+
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .chat-message {
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .chart-bar {
+            transition: width 0.6s ease;
+        }
+
+        .modal-overlay {
+            backdrop-filter: blur(4px);
+        }
+
+        .btn-primary {
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.02);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .badge {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+    </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full">
+  <div id="root" class="h-full"></div>
+  <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // Default Configuration
+        const defaultConfig = {
+            primary_color: "#2563EB",
+            background_color: "#F3F4F6",
+            surface_color: "#FFFFFF",
+            text_color: "#111827",
+            secondary_color: "#6B7280",
+            app_title: "ClubX",
+            app_tagline: "College Club & Event Management",
+            admin_hint: "admin / admin123",
+            coordinator_hint: "coordinator / coord123",
+            student_hint: "student / student123"
+        };
+
+        let appConfig = { ...defaultConfig };
+
+        // Initialize Local Storage with dummy data
+        const initializeLocalStorage = () => {
+            if (!localStorage.getItem('clubx_initialized')) {
+                const initialData = {
+                    users: [
+                        { id: 1, username: 'admin', password: 'admin123', role: 'admin', name: 'Admin User' },
+                        { id: 2, username: 'coordinator', password: 'coord123', role: 'coordinator', name: 'John Coordinator' },
+                        { id: 3, username: 'student', password: 'student123', role: 'student', name: 'Jane Student' }
+                    ],
+                    clubs: [
+                        { id: 1, name: 'Robotics Club', description: 'Build and program robots', coordinator: 'John Coordinator', status: 'active', members: [3], joinRequests: [] },
+                        { id: 2, name: 'Photography Society', description: 'Capture beautiful moments', coordinator: 'John Coordinator', status: 'active', members: [], joinRequests: [] }
+                    ],
+                    pendingClubs: [],
+                    events: [
+                        { id: 1, name: 'Tech Fest 2024', description: 'Annual technology festival', date: '2024-03-15', time: '10:00 AM', venue: 'Main Auditorium', clubId: 1, status: 'approved', registrations: [3] }
+                    ],
+                    pendingEvents: [],
+                    announcements: [
+                        { id: 1, title: 'Welcome to ClubX', content: 'Join clubs and participate in events!', type: 'global', clubId: null, date: new Date().toISOString(), author: 'Admin' }
+                    ],
+                    chatMessages: {
+                        1: [
+                            { id: 1, user: 'John Coordinator', message: 'Welcome to Robotics Club!', timestamp: new Date().toISOString() }
+                        ],
+                        2: []
+                    }
+                };
+
+                localStorage.setItem('clubx_users', JSON.stringify(initialData.users));
+                localStorage.setItem('clubx_clubs', JSON.stringify(initialData.clubs));
+                localStorage.setItem('clubx_pendingClubs', JSON.stringify(initialData.pendingClubs));
+                localStorage.setItem('clubx_events', JSON.stringify(initialData.events));
+                localStorage.setItem('clubx_pendingEvents', JSON.stringify(initialData.pendingEvents));
+                localStorage.setItem('clubx_announcements', JSON.stringify(initialData.announcements));
+                localStorage.setItem('clubx_chatMessages', JSON.stringify(initialData.chatMessages));
+                localStorage.setItem('clubx_initialized', 'true');
+            }
+        };
+
+        // Login Component
+        const Login = ({ onLogin }) => {
+            const [username, setUsername] = useState('');
+            const [password, setPassword] = useState('');
+            const [error, setError] = useState('');
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                const users = JSON.parse(localStorage.getItem('clubx_users') || '[]');
+                const user = users.find(u => u.username === username && u.password === password);
+
+                if (user) {
+                    localStorage.setItem('clubx_currentUser', JSON.stringify(user));
+                    onLogin(user);
+                } else {
+                    setError('Invalid credentials. Please try again.');
+                }
+            };
+
+            const primaryColor = appConfig.primary_color || defaultConfig.primary_color;
+            const backgroundColor = appConfig.background_color || defaultConfig.background_color;
+            const surfaceColor = appConfig.surface_color || defaultConfig.surface_color;
+            const textColor = appConfig.text_color || defaultConfig.text_color;
+            const secondaryColor = appConfig.secondary_color || defaultConfig.secondary_color;
+            const appTitle = appConfig.app_title || defaultConfig.app_title;
+            const appTagline = appConfig.app_tagline || defaultConfig.app_tagline;
+            const adminHint = appConfig.admin_hint || defaultConfig.admin_hint;
+            const coordinatorHint = appConfig.coordinator_hint || defaultConfig.coordinator_hint;
+            const studentHint = appConfig.student_hint || defaultConfig.student_hint;
+
+            return (
+                <div style={{ backgroundColor, minHeight: '100%', width: '100%' }} className="flex items-center justify-center p-4">
+                    <div style={{ backgroundColor: surfaceColor }} className="rounded-xl shadow-2xl p-8 w-full max-w-md fade-in">
+                        <div className="text-center mb-8">
+                            <div style={{ backgroundColor: primaryColor }} className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center">
+                                <span className="text-white text-3xl">🎓</span>
+                            </div>
+                            <h1 style={{ color: textColor }} className="text-3xl font-bold mb-2">{appTitle}</h1>
+                            <p style={{ color: secondaryColor }} className="text-sm">{appTagline}</p>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <label style={{ color: textColor }} className="block text-sm font-medium mb-2">Username</label>
+                                <input
+                                    type="text"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    style={{ borderColor: '#D1D5DB', color: textColor }}
+                                    className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2"
+                                    placeholder="Enter username"
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label style={{ color: textColor }} className="block text-sm font-medium mb-2">Password</label>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    style={{ borderColor: '#D1D5DB', color: textColor }}
+                                    className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2"
+                                    placeholder="Enter password"
+                                    required
+                                />
+                            </div>
+
+                            {error && (
+                                <div style={{ backgroundColor: '#FEE2E2', color: '#991B1B' }} className="p-3 rounded-lg text-sm">
+                                    {error}
+                                </div>
+                            )}
+
+                            <button
+                                type="submit"
+                                style={{ backgroundColor: primaryColor }}
+                                className="btn-primary w-full text-white font-semibold py-3 px-4 rounded-lg"
+                            >
+                                Login
+                            </button>
+                        </form>
+
+                        <div style={{ backgroundColor, color: secondaryColor }} className="mt-6 p-4 rounded-lg text-xs space-y-1">
+                            <p className="font-semibold mb-2">Demo Credentials:</p>
+                            <p>👤 Admin: {adminHint}</p>
+                            <p>👤 Coordinator: {coordinatorHint}</p>
+                            <p>👤 Student: {studentHint}</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Sidebar Component
+        const Sidebar = ({ role, currentView, onNavigate }) => {
+            const primaryColor = appConfig.primary_color || defaultConfig.primary_color;
+            const surfaceColor = appConfig.surface_color || defaultConfig.surface_color;
+            const textColor = appConfig.text_color || defaultConfig.text_color;
+            const backgroundColor = appConfig.background_color || defaultConfig.background_color;
+
+            const menuItems = {
+                admin: [
+                    { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+                    { id: 'clubs', label: 'Manage Clubs', icon: '🏛️' },
+                    { id: 'events', label: 'Approve Events', icon: '📅' },
+                    { id: 'announcements', label: 'Announcements', icon: '📢' },
+                    { id: 'analytics', label: 'Analytics', icon: '📈' }
+                ],
+                coordinator: [
+                    { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+                    { id: 'myClubs', label: 'My Clubs', icon: '🏛️' },
+                    { id: 'createClub', label: 'Create Club', icon: '➕' },
+                    { id: 'events', label: 'Events', icon: '📅' },
+                    { id: 'announcements', label: 'Announcements', icon: '📢' },
+                    { id: 'chat', label: 'Chat Rooms', icon: '💬' }
+                ],
+                student: [
+                    { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+                    { id: 'clubs', label: 'Browse Clubs', icon: '🏛️' },
+                    { id: 'myClubs', label: 'My Clubs', icon: '📚' },
+                    { id: 'events', label: 'Events', icon: '📅' },
+                    { id: 'announcements', label: 'Announcements', icon: '📢' },
+                    { id: 'chat', label: 'Chat Rooms', icon: '💬' }
+                ]
+            };
+
+            return (
+                <div style={{ backgroundColor: surfaceColor }} className="sidebar w-64 h-full border-r shadow-lg p-4">
+                    <div className="mb-8">
+                        <div style={{ backgroundColor: primaryColor }} className="w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-3">
+                            <span className="text-white text-2xl">🎓</span>
+                        </div>
+                        <h2 style={{ color: textColor }} className="text-center font-bold text-lg">{appConfig.app_title || defaultConfig.app_title}</h2>
+                        <p style={{ color: appConfig.secondary_color || defaultConfig.secondary_color }} className="text-center text-xs capitalize">{role} Portal</p>
+                    </div>
+
+                    <nav className="space-y-2">
+                        {menuItems[role].map(item => (
+                            <button
+                                key={item.id}
+                                onClick={() => onNavigate(item.id)}
+                                style={{
+                                    backgroundColor: currentView === item.id ? backgroundColor : 'transparent',
+                                    color: currentView === item.id ? primaryColor : textColor
+                                }}
+                                className="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 font-medium"
+                            >
+                                <span className="text-xl">{item.icon}</span>
+                                <span>{item.label}</span>
+                            </button>
+                        ))}
+                    </nav>
+                </div>
+            );
+        };
+
+        // Admin Dashboard
+        const AdminDashboard = ({ currentView, onNavigate }) => {
+            const [clubs, setClubs] = useState([]);
+            const [pendingClubs, setPendingClubs] = useState([]);
+            const [events, setEvents] = useState([]);
+            const [pendingEvents, setPendingEvents] = useState([]);
+            const [announcements, setAnnouncements] = useState([]);
+            const [newAnnouncement, setNewAnnouncement] = useState({ title: '', content: '' });
+            const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+
+            const primaryColor = appConfig.primary_color || defaultConfig.primary_color;
+            const backgroundColor = appConfig.background_color || defaultConfig.background_color;
+            const surfaceColor = appConfig.surface_color || defaultConfig.surface_color;
+            const textColor = appConfig.text_color || defaultConfig.text_color;
+            const secondaryColor = appConfig.secondary_color || defaultConfig.secondary_color;
+
+            useEffect(() => {
+                loadData();
+            }, [currentView]);
+
+            const loadData = () => {
+                setClubs(JSON.parse(localStorage.getItem('clubx_clubs') || '[]'));
+                setPendingClubs(JSON.parse(localStorage.getItem('clubx_pendingClubs') || '[]'));
+                setEvents(JSON.parse(localStorage.getItem('clubx_events') || '[]'));
+                setPendingEvents(JSON.parse(localStorage.getItem('clubx_pendingEvents') || '[]'));
+                setAnnouncements(JSON.parse(localStorage.getItem('clubx_announcements') || '[]'));
+            };
+
+            const handleApproveClub = (clubId) => {
+                const pending = [...pendingClubs];
+                const clubIndex = pending.findIndex(c => c.id === clubId);
+                if (clubIndex > -1) {
+                    const club = pending[clubIndex];
+                    club.status = 'active';
+                    const updatedClubs = [...clubs, club];
+                    pending.splice(clubIndex, 1);
+
+                    localStorage.setItem('clubx_clubs', JSON.stringify(updatedClubs));
+                    localStorage.setItem('clubx_pendingClubs', JSON.stringify(pending));
+                    loadData();
+                }
+            };
+
+            const handleRejectClub = (clubId) => {
+                const pending = pendingClubs.filter(c => c.id !== clubId);
+                localStorage.setItem('clubx_pendingClubs', JSON.stringify(pending));
+                loadData();
+            };
+
+            const handleDeleteClub = (clubId) => {
+                const updatedClubs = clubs.filter(c => c.id !== clubId);
+                localStorage.setItem('clubx_clubs', JSON.stringify(updatedClubs));
+                setShowDeleteConfirm(null);
+                loadData();
+            };
+
+            const handleToggleClubStatus = (clubId) => {
+                const updatedClubs = clubs.map(c =>
+                    c.id === clubId ? { ...c, status: c.status === 'active' ? 'inactive' : 'active' } : c
+                );
+                localStorage.setItem('clubx_clubs', JSON.stringify(updatedClubs));
+                loadData();
+            };
+
+            const handleApproveEvent = (eventId) => {
+                const pending = [...pendingEvents];
+                const eventIndex = pending.findIndex(e => e.id === eventId);
+                if (eventIndex > -1) {
+                    const event = pending[eventIndex];
+                    event.status = 'approved';
+                    const updatedEvents = [...events, event];
+                    pending.splice(eventIndex, 1);
+
+                    localStorage.setItem('clubx_events', JSON.stringify(updatedEvents));
+                    localStorage.setItem('clubx_pendingEvents', JSON.stringify(pending));
+                    loadData();
+                }
+            };
+
+            const handleRejectEvent = (eventId) => {
+                const pending = pendingEvents.filter(e => e.id !== eventId);
+                localStorage.setItem('clubx_pendingEvents', JSON.stringify(pending));
+                loadData();
+            };
+
+            const handleCreateAnnouncement = (e) => {
+                e.preventDefault();
+                const newAnn = {
+                    id: Date.now(),
+                    ...newAnnouncement,
+                    type: 'global',
+                    clubId: null,
+                    date: new Date().toISOString(),
+                    author: 'Admin'
+                };
+                const updated = [newAnn, ...announcements];
+                localStorage.setItem('clubx_announcements', JSON.stringify(updated));
+                setNewAnnouncement({ title: '', content: '' });
+                loadData();
+            };
+
+            if (currentView === 'dashboard') {
+                return (
+                    <div className="p-6 fade-in">
+                        <h1 style={{ color: textColor }} className="text-3xl font-bold mb-6">Admin Dashboard</h1>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div style={{ backgroundColor: surfaceColor }} className="card-hover rounded-xl shadow-lg p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div style={{ backgroundColor: primaryColor }} className="w-12 h-12 rounded-lg flex items-center justify-center">
+                                        <span className="text-white text-2xl">🏛️</span>
+                                    </div>
+                                    <span style={{ color: textColor }} className="text-3xl font-bold">{clubs.length}</span>
+                                </div>
+                                <h3 style={{ color: textColor }} className="font-semibold">Active Clubs</h3>
+                                <p style={{ color: secondaryColor }} className="text-sm">Total registered clubs</p>
+                            </div>
+
+                            <div style={{ backgroundColor: surfaceColor }} className="card-hover rounded-xl shadow-lg p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div style={{ backgroundColor: '#F59E0B' }} className="w-12 h-12 rounded-lg flex items-center justify-center">
+                                        <span className="text-white text-2xl">⏳</span>
+                                    </div>
+                                    <span style={{ color: textColor }} className="text-3xl font-bold">{pendingClubs.length}</span>
+                                </div>
+                                <h3 style={{ color: textColor }} className="font-semibold">Pending Clubs</h3>
+                                <p style={{ color: secondaryColor }} className="text-sm">Awaiting approval</p>
+                            </div>
+
+                            <div style={{ backgroundColor: surfaceColor }} className="card-hover rounded-xl shadow-lg p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div style={{ backgroundColor: '#10B981' }} className="w-12 h-12 rounded-lg flex items-center justify-center">
+                                        <span className="text-white text-2xl">📅</span>
+                                    </div>
+                                    <span style={{ color: textColor }} className="text-3xl font-bold">{events.length}</span>
+                                </div>
+                                <h3 style={{ color: textColor }} className="font-semibold">Approved Events</h3>
+                                <p style={{ color: secondaryColor }} className="text-sm">Live events</p>
+                            </div>
+
+                            <div style={{ backgroundColor: surfaceColor }} className="card-hover rounded-xl shadow-lg p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div style={{ backgroundColor: '#EF4444' }} className="w-12 h-12 rounded-lg flex items-center justify-center">
+                                        <span className="text-white text-2xl">📢</span>
+                                    </div>
+                                    <span style={{ color: textColor }} className="text-3xl font-bold">{announcements.length}</span>
+                                </div>
+                                <h3 style={{ color: textColor }} className="font-semibold">Announcements</h3>
+                                <p style={{ color: secondaryColor }} className="text-sm">Total announcements</p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (currentView === 'clubs') {
+                return (
+                    <div className="p-6 fade-in">
+                        <h1 style={{ color: textColor }} className="text-3xl font-bold mb-6">Manage Clubs</h1>
+
+                        {pendingClubs.length > 0 && (
+                            <div className="mb-8">
+                                <h2 style={{ color: textColor }} className="text-xl font-semibold mb-4">Pending Approvals</h2>
+                                <div className="space-y-4">
+                                    {pendingClubs.map(club => (
+                                        <div key={club.id} style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md p-6">
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex-1">
+                                                    <h3 style={{ color: textColor }} className="text-lg font-semibold mb-2">{club.name}</h3>
+                                                    <p style={{ color: secondaryColor }} className="text-sm mb-2">{club.description}</p>
+                                                    <p style={{ color: secondaryColor }} className="text-xs">Coordinator: {club.coordinator}</p>
+                                                </div>
+                                                <div className="flex space-x-2">
+                                                    <button
+                                                        onClick={() => handleApproveClub(club.id)}
+                                                        style={{ backgroundColor: '#10B981' }}
+                                                        className="btn-primary text-white px-4 py-2 rounded-lg text-sm font-medium"
+                                                    >
+                                                        ✓ Approve
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleRejectClub(club.id)}
+                                                        style={{ backgroundColor: '#EF4444' }}
+                                                        className="btn-primary text-white px-4 py-2 rounded-lg text-sm font-medium"
+                                                    >
+                                                        ✗ Reject
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <h2 style={{ color: textColor }} className="text-xl font-semibold mb-4">Active Clubs</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {clubs.map(club => (
+                                <div key={club.id} style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md p-6">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div>
+                                            <h3 style={{ color: textColor }} className="text-lg font-semibold mb-1">{club.name}</h3>
+                                            <span
+                                                style={{
+                                                    backgroundColor: club.status === 'active' ? '#D1FAE5' : '#FEE2E2',
+                                                    color: club.status === 'active' ? '#065F46' : '#991B1B'
+                                                }}
+                                                className="text-xs px-2 py-1 rounded"
+                                            >
+                                                {club.status}
+                                            </span>
+                                        </div>
+                                        <span className="text-2xl">🏛️</span>
+                                    </div>
+                                    <p style={{ color: secondaryColor }} className="text-sm mb-3">{club.description}</p>
+                                    <p style={{ color: secondaryColor }} className="text-xs mb-4">Members: {club.members?.length || 0}</p>
+                                    <div className="flex space-x-2">
+                                        <button
+                                            onClick={() => handleToggleClubStatus(club.id)}
+                                            style={{ backgroundColor: club.status === 'active' ? '#F59E0B' : '#10B981' }}
+                                            className="btn-primary flex-1 text-white px-3 py-2 rounded-lg text-sm font-medium"
+                                        >
+                                            {club.status === 'active' ? 'Deactivate' : 'Activate'}
+                                        </button>
+                                        <button
+                                            onClick={() => setShowDeleteConfirm(club.id)}
+                                            style={{ backgroundColor: '#EF4444' }}
+                                            className="btn-primary text-white px-3 py-2 rounded-lg text-sm font-medium"
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {showDeleteConfirm && (
+                            <div className="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" style={{ zIndex: 1000 }}>
+                                <div style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-xl p-6 max-w-md w-full">
+                                    <h3 style={{ color: textColor }} className="text-lg font-semibold mb-4">Confirm Delete</h3>
+                                    <p style={{ color: secondaryColor }} className="mb-6">Are you sure you want to delete this club? This action cannot be undone.</p>
+                                    <div className="flex space-x-3">
+                                        <button
+                                            onClick={() => handleDeleteClub(showDeleteConfirm)}
+                                            style={{ backgroundColor: '#EF4444' }}
+                                            className="btn-primary flex-1 text-white px-4 py-2 rounded-lg font-medium"
+                                        >
+                                            Delete
+                                        </button>
+                                        <button
+                                            onClick={() => setShowDeleteConfirm(null)}
+                                            style={{ backgroundColor: backgroundColor, color: textColor }}
+                                            className="flex-1 px-4 py-2 rounded-lg font-medium"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+
+            if (currentView === 'events') {
+                return (
+                    <div className="p-6 fade-in">
+                        <h1 style={{ color: textColor }} className="text-3xl font-bold mb-6">Event Management</h1>
+
+                        {pendingEvents.length > 0 && (
+                            <div className="mb-8">
+                                <h2 style={{ color: textColor }} className="text-xl font-semibold mb-4">Pending Event Approvals</h2>
+                                <div className="space-y-4">
+                                    {pendingEvents.map(event => (
+                                        <div key={event.id} style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md p-6">
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex-1">
+                                                    <h3 style={{ color: textColor }} className="text-lg font-semibold mb-2">{event.name}</h3>
+                                                    <p style={{ color: secondaryColor }} className="text-sm mb-2">{event.description}</p>
+                                                    <div style={{ color: secondaryColor }} className="text-xs space-y-1">
+                                                        <p>📅 {event.date} at {event.time}</p>
+                                                        <p>📍 {event.venue}</p>
+                                                        <p>🏛️ Club ID: {event.clubId}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex space-x-2">
+                                                    <button
+                                                        onClick={() => handleApproveEvent(event.id)}
+                                                        style={{ backgroundColor: '#10B981' }}
+                                                        className="btn-primary text-white px-4 py-2 rounded-lg text-sm font-medium"
+                                                    >
+                                                        ✓ Approve
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleRejectEvent(event.id)}
+                                                        style={{ backgroundColor: '#EF4444' }}
+                                                        className="btn-primary text-white px-4 py-2 rounded-lg text-sm font-medium"
+                                                    >
+                                                        ✗ Reject
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <h2 style={{ color: textColor }} className="text-xl font-semibold mb-4">Approved Events</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {events.map(event => (
+                                <div key={event.id} style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md p-6">
+                                    <h3 style={{ color: textColor }} className="text-lg font-semibold mb-2">{event.name}</h3>
+                                    <p style={{ color: secondaryColor }} className="text-sm mb-3">{event.description}</p>
+                                    <div style={{ color: secondaryColor }} className="text-sm space-y-1">
+                                        <p>📅 {event.date} at {event.time}</p>
+                                        <p>📍 {event.venue}</p>
+                                        <p>👥 Registrations: {event.registrations?.length || 0}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            }
+
+            if (currentView === 'announcements') {
+                return (
+                    <div className="p-6 fade-in">
+                        <h1 style={{ color: textColor }} className="text-3xl font-bold mb-6">Announcements</h1>
+
+                        <div style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md p-6 mb-8">
+                            <h2 style={{ color: textColor }} className="text-xl font-semibold mb-4">Create Global Announcement</h2>
+                            <form onSubmit={handleCreateAnnouncement} className="space-y-4">
+                                <div>
+                                    <label style={{ color: textColor }} className="block text-sm font-medium mb-2">Title</label>
+                                    <input
+                                        type="text"
+                                        value={newAnnouncement.title}
+                                        onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
+                                        style={{ borderColor: '#D1D5DB', color: textColor }}
+                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+                                        placeholder="Announcement title"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ color: textColor }} className="block text-sm font-medium mb-2">Content</label>
+                                    <textarea
+                                        value={newAnnouncement.content}
+                                        onChange={(e) => setNewAnnouncement({ ...newAnnouncement, content: e.target.value })}
+                                        style={{ borderColor: '#D1D5DB', color: textColor }}
+                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+                                        rows="4"
+                                        placeholder="Announcement content"
+                                        required
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    style={{ backgroundColor: primaryColor }}
+                                    className="btn-primary text-white px-6 py-2 rounded-lg font-medium"
+                                >
+                                    Post Announcement
+                                </button>
+                            </form>
+                        </div>
+
+                        <h2 style={{ color: textColor }} className="text-xl font-semibold mb-4">All Announcements</h2>
+                        <div className="space-y-4">
+                            {announcements.map(ann => (
+                                <div key={ann.id} style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md p-6">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h3 style={{ color: textColor }} className="text-lg font-semibold">{ann.title}</h3>
+                                        <span
+                                            style={{
+                                                backgroundColor: ann.type === 'global' ? '#DBEAFE' : '#FEF3C7',
+                                                color: ann.type === 'global' ? '#1E40AF' : '#92400E'
+                                            }}
+                                            className="text-xs px-2 py-1 rounded"
+                                        >
+                                            {ann.type}
+                                        </span>
+                                    </div>
+                                    <p style={{ color: secondaryColor }} className="text-sm mb-3">{ann.content}</p>
+                                    <div style={{ color: secondaryColor }} className="text-xs flex justify-between">
+                                        <span>By: {ann.author}</span>
+                                        <span>{new Date(ann.date).toLocaleDateString()}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            }
+
+            if (currentView === 'analytics') {
+                const totalMembers = clubs.reduce((sum, club) => sum + (club.members?.length || 0), 0);
+                const totalRegistrations = events.reduce((sum, event) => sum + (event.registrations?.length || 0), 0);
+
+                return (
+                    <div className="p-6 fade-in">
+                        <h1 style={{ color: textColor }} className="text-3xl font-bold mb-6">Student Analytics</h1>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <div style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md p-6">
+                                <h3 style={{ color: textColor }} className="text-sm font-medium mb-2">Total Club Members</h3>
+                                <p style={{ color: primaryColor }} className="text-4xl font-bold">{totalMembers}</p>
+                            </div>
+                            <div style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md p-6">
+                                <h3 style={{ color: textColor }} className="text-sm font-medium mb-2">Event Registrations</h3>
+                                <p style={{ color: primaryColor }} className="text-4xl font-bold">{totalRegistrations}</p>
+                            </div>
+                            <div style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md p-6">
+                                <h3 style={{ color: textColor }} className="text-sm font-medium mb-2">Active Clubs</h3>
+                                <p style={{ color: primaryColor }} className="text-4xl font-bold">{clubs.filter(c => c.status === 'active').length}</p>
+                            </div>
+                        </div>
+
+                        <div style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md p-6 mb-6">
+                            <h2 style={{ color: textColor }} className="text-xl font-semibold mb-6">Club Membership Distribution</h2>
+                            <div className="space-y-4">
+                                {clubs.map(club => {
+                                    const memberCount = club.members?.length || 0;
+                                    const percentage = totalMembers > 0 ? (memberCount / totalMembers) * 100 : 0;
+                                    return (
+                                        <div key={club.id}>
+                                            <div className="flex justify-between mb-2">
+                                                <span style={{ color: textColor }} className="text-sm font-medium">{club.name}</span>
+                                                <span style={{ color: secondaryColor }} className="text-sm">{memberCount} members</span>
+                                            </div>
+                                            <div style={{ backgroundColor: backgroundColor }} className="w-full h-3 rounded-full overflow-hidden">
+                                                <div
+                                                    style={{ backgroundColor: primaryColor, width: `${percentage}%` }}
+                                                    className="chart-bar h-full rounded-full"
+                                                />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <div style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md p-6">
+                            <h2 style={{ color: textColor }} className="text-xl font-semibold mb-6">Event Participation</h2>
+                            <div className="space-y-4">
+                                {events.map(event => {
+                                    const regCount = event.registrations?.length || 0;
+                                    const percentage = totalRegistrations > 0 ? (regCount / totalRegistrations) * 100 : 0;
+                                    return (
+                                        <div key={event.id}>
+                                            <div className="flex justify-between mb-2">
+                                                <span style={{ color: textColor }} className="text-sm font-medium">{event.name}</span>
+                                                <span style={{ color: secondaryColor }} className="text-sm">{regCount} registered</span>
+                                            </div>
+                                            <div style={{ backgroundColor: backgroundColor }} className="w-full h-3 rounded-full overflow-hidden">
+                                                <div
+                                                    style={{ backgroundColor: '#10B981', width: `${percentage}%` }}
+                                                    className="chart-bar h-full rounded-full"
+                                                />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return null;
+        };
+
+        // Coordinator Dashboard
+        const CoordinatorDashboard = ({ currentView, currentUser }) => {
+            const [clubs, setClubs] = useState([]);
+            const [myClubs, setMyClubs] = useState([]);
+            const [events, setEvents] = useState([]);
+            const [announcements, setAnnouncements] = useState([]);
+            const [newClub, setNewClub] = useState({ name: '', description: '' });
+            const [newEvent, setNewEvent] = useState({ name: '', description: '', date: '', time: '', venue: '', clubId: '' });
+            const [newAnnouncement, setNewAnnouncement] = useState({ title: '', content: '', clubId: '' });
+            const [selectedClub, setSelectedClub] = useState(null);
+            const [chatMessages, setChatMessages] = useState({});
+            const [newMessage, setNewMessage] = useState('');
+
+            const primaryColor = appConfig.primary_color || defaultConfig.primary_color;
+            const backgroundColor = appConfig.background_color || defaultConfig.background_color;
+            const surfaceColor = appConfig.surface_color || defaultConfig.surface_color;
+            const textColor = appConfig.text_color || defaultConfig.text_color;
+            const secondaryColor = appConfig.secondary_color || defaultConfig.secondary_color;
+
+            useEffect(() => {
+                loadData();
+            }, [currentView]);
+
+            const loadData = () => {
+                const allClubs = JSON.parse(localStorage.getItem('clubx_clubs') || '[]');
+                const coordClubs = allClubs.filter(c => c.coordinator === currentUser.name);
+                setClubs(allClubs);
+                setMyClubs(coordClubs);
+                setEvents(JSON.parse(localStorage.getItem('clubx_events') || '[]'));
+                setAnnouncements(JSON.parse(localStorage.getItem('clubx_announcements') || '[]'));
+                setChatMessages(JSON.parse(localStorage.getItem('clubx_chatMessages') || '{}'));
+            };
+
+            const handleCreateClub = (e) => {
+                e.preventDefault();
+                const pendingClubs = JSON.parse(localStorage.getItem('clubx_pendingClubs') || '[]');
+                const newClubData = {
+                    id: Date.now(),
+                    ...newClub,
+                    coordinator: currentUser.name,
+                    status: 'pending',
+                    members: [],
+                    joinRequests: []
+                };
+                pendingClubs.push(newClubData);
+                localStorage.setItem('clubx_pendingClubs', JSON.stringify(pendingClubs));
+                setNewClub({ name: '', description: '' });
+                alert('Club submitted for admin approval!');
+            };
+
+            const handleCreateEvent = (e) => {
+                e.preventDefault();
+                const pendingEvents = JSON.parse(localStorage.getItem('clubx_pendingEvents') || '[]');
+                const newEventData = {
+                    id: Date.now(),
+                    ...newEvent,
+                    clubId: parseInt(newEvent.clubId),
+                    status: 'pending',
+                    registrations: []
+                };
+                pendingEvents.push(newEventData);
+                localStorage.setItem('clubx_pendingEvents', JSON.stringify(pendingEvents));
+                setNewEvent({ name: '', description: '', date: '', time: '', venue: '', clubId: '' });
+                alert('Event submitted for admin approval!');
+            };
+
+            const handleCreateAnnouncement = (e) => {
+                e.preventDefault();
+                const anns = JSON.parse(localStorage.getItem('clubx_announcements') || '[]');
+                const newAnn = {
+                    id: Date.now(),
+                    ...newAnnouncement,
+                    clubId: parseInt(newAnnouncement.clubId),
+                    type: 'club',
+                    date: new Date().toISOString(),
+                    author: currentUser.name
+                };
+                anns.unshift(newAnn);
+                localStorage.setItem('clubx_announcements', JSON.stringify(anns));
+                setNewAnnouncement({ title: '', content: '', clubId: '' });
+                loadData();
+            };
+
+            const handleApproveJoinRequest = (clubId, studentId) => {
+                const allClubs = JSON.parse(localStorage.getItem('clubx_clubs') || '[]');
+                const clubIndex = allClubs.findIndex(c => c.id === clubId);
+                if (clubIndex > -1) {
+                    allClubs[clubIndex].members.push(studentId);
+                    allClubs[clubIndex].joinRequests = allClubs[clubIndex].joinRequests.filter(id => id !== studentId);
+                    localStorage.setItem('clubx_clubs', JSON.stringify(allClubs));
+                    loadData();
+                }
+            };
+
+            const handleRejectJoinRequest = (clubId, studentId) => {
+                const allClubs = JSON.parse(localStorage.getItem('clubx_clubs') || '[]');
+                const clubIndex = allClubs.findIndex(c => c.id === clubId);
+                if (clubIndex > -1) {
+                    allClubs[clubIndex].joinRequests = allClubs[clubIndex].joinRequests.filter(id => id !== studentId);
+                    localStorage.setItem('clubx_clubs', JSON.stringify(allClubs));
+                    loadData();
+                }
+            };
+
+            const handleRemoveMember = (clubId, studentId) => {
+                const allClubs = JSON.parse(localStorage.getItem('clubx_clubs') || '[]');
+                const clubIndex = allClubs.findIndex(c => c.id === clubId);
+                if (clubIndex > -1) {
+                    allClubs[clubIndex].members = allClubs[clubIndex].members.filter(id => id !== studentId);
+                    localStorage.setItem('clubx_clubs', JSON.stringify(allClubs));
+                    loadData();
+                }
+            };
+
+            const handleSendMessage = (e, clubId) => {
+                e.preventDefault();
+                if (!newMessage.trim()) return;
+
+                const messages = JSON.parse(localStorage.getItem('clubx_chatMessages') || '{}');
+                if (!messages[clubId]) messages[clubId] = [];
+
+                const newMsg = {
+                    id: Date.now(),
+                    user: currentUser.name,
+                    message: newMessage,
+                    timestamp: new Date().toISOString()
+                };
+
+                messages[clubId].push(newMsg);
+                localStorage.setItem('clubx_chatMessages', JSON.stringify(messages));
+                setNewMessage('');
+                loadData();
+            };
+
+            if (currentView === 'dashboard') {
+                return (
+                    <div className="p-6 fade-in">
+                        <h1 style={{ color: textColor }} className="text-3xl font-bold mb-6">Coordinator Dashboard</h1>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div style={{ backgroundColor: surfaceColor }} className="card-hover rounded-xl shadow-lg p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div style={{ backgroundColor: primaryColor }} className="w-12 h-12 rounded-lg flex items-center justify-center">
+                                        <span className="text-white text-2xl">🏛️</span>
+                                    </div>
+                                    <span style={{ color: textColor }} className="text-3xl font-bold">{myClubs.length}</span>
+                                </div>
+                                <h3 style={{ color: textColor }} className="font-semibold">My Clubs</h3>
+                                <p style={{ color: secondaryColor }} className="text-sm">Clubs I coordinate</p>
+                            </div>
+
+                            <div style={{ backgroundColor: surfaceColor }} className="card-hover rounded-xl shadow-lg p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div style={{ backgroundColor: '#10B981' }} className="w-12 h-12 rounded-lg flex items-center justify-center">
+                                        <span className="text-white text-2xl">📅</span>
+                                    </div>
+                                    <span style={{ color: textColor }} className="text-3xl font-bold">
+                                        {events.filter(e => myClubs.some(c => c.id === e.clubId)).length}
+                                    </span>
+                                </div>
+                                <h3 style={{ color: textColor }} className="font-semibold">My Events</h3>
+                                <p style={{ color: secondaryColor }} className="text-sm">Events I manage</p>
+                            </div>
+
+                            <div style={{ backgroundColor: surfaceColor }} className="card-hover rounded-xl shadow-lg p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div style={{ backgroundColor: '#F59E0B' }} className="w-12 h-12 rounded-lg flex items-center justify-center">
+                                        <span className="text-white text-2xl">👥</span>
+                                    </div>
+                                    <span style={{ color: textColor }} className="text-3xl font-bold">
+                                        {myClubs.reduce((sum, club) => sum + (club.members?.length || 0), 0)}
+                                    </span>
+                                </div>
+                                <h3 style={{ color: textColor }} className="font-semibold">Total Members</h3>
+                                <p style={{ color: secondaryColor }} className="text-sm">Across all clubs</p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (currentView === 'myClubs') {
+                return (
+                    <div className="p-6 fade-in">
+                        <h1 style={{ color: textColor }} className="text-3xl font-bold mb-6">My Clubs</h1>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {myClubs.map(club => (
+                                <div key={club.id} style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md p-6">
+                                    <h3 style={{ color: textColor }} className="text-lg font-semibold mb-2">{club.name}</h3>
+                                    <p style={{ color: secondaryColor }} className="text-sm mb-4">{club.description}</p>
+
+                                    <div className="mb-4">
+                                        <h4 style={{ color: textColor }} className="font-medium text-sm mb-2">Members ({club.members?.length || 0})</h4>
+                                        {club.members && club.members.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {club.members.map(memberId => (
+                                                    <div key={memberId} style={{ backgroundColor: backgroundColor }} className="p-2 rounded flex justify-between items-center">
+                                                        <span style={{ color: textColor }} className="text-sm">Student ID: {memberId}</span>
+                                                        <button
+                                                            onClick={() => handleRemoveMember(club.id, memberId)}
+                                                            style={{ color: '#EF4444' }}
+                                                            className="text-xs font-medium hover:underline"
+                                                        >
+                                                            Remove
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p style={{ color: secondaryColor }} className="text-xs">No members yet</p>
+                                        )}
+                                    </div>
+
+                                    {club.joinRequests && club.joinRequests.length > 0 && (
+                                        <div>
+                                            <h4 style={{ color: textColor }} className="font-medium text-sm mb-2">
+                                                Join Requests ({club.joinRequests.length})
+                                            </h4>
+                                            <div className="space-y-2">
+                                                {club.joinRequests.map(studentId => (
+                                                    <div key={studentId} style={{ backgroundColor: backgroundColor }} className="p-2 rounded flex justify-between items-center">
+                                                        <span style={{ color: textColor }} className="text-sm">Student ID: {studentId}</span>
+                                                        <div className="flex space-x-2">
+                                                            <button
+                                                                onClick={() => handleApproveJoinRequest(club.id, studentId)}
+                                                                style={{ backgroundColor: '#10B981' }}
+                                                                className="btn-primary text-white text-xs px-2 py-1 rounded"
+                                                            >
+                                                                ✓
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleRejectJoinRequest(club.id, studentId)}
+                                                                style={{ backgroundColor: '#EF4444' }}
+                                                                className="btn-primary text-white text-xs px-2 py-1 rounded"
+                                                            >
+                                                                ✗
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            }
+
+            if (currentView === 'createClub') {
+                return (
+                    <div className="p-6 fade-in">
+                        <h1 style={{ color: textColor }} className="text-3xl font-bold mb-6">Create New Club</h1>
+                        <div style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md p-6 max-w-2xl">
+                            <form onSubmit={handleCreateClub} className="space-y-4">
+                                <div>
+                                    <label style={{ color: textColor }} className="block text-sm font-medium mb-2">Club Name</label>
+                                    <input
+                                        type="text"
+                                        value={newClub.name}
+                                        onChange={(e) => setNewClub({ ...newClub, name: e.target.value })}
+                                        style={{ borderColor: '#D1D5DB', color: textColor }}
+                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+                                        placeholder="Enter club name"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ color: textColor }} className="block text-sm font-medium mb-2">Description</label>
+                                    <textarea
+                                        value={newClub.description}
+                                        onChange={(e) => setNewClub({ ...newClub, description: e.target.value })}
+                                        style={{ borderColor: '#D1D5DB', color: textColor }}
+                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+                                        rows="4"
+                                        placeholder="Describe your club"
+                                        required
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    style={{ backgroundColor: primaryColor }}
+                                    className="btn-primary text-white px-6 py-2 rounded-lg font-medium"
+                                >
+                                    Submit for Approval
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (currentView === 'events') {
+                return (
+                    <div className="p-6 fade-in">
+                        <h1 style={{ color: textColor }} className="text-3xl font-bold mb-6">Event Management</h1>
+
+                        <div style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md p-6 mb-8 max-w-2xl">
+                            <h2 style={{ color: textColor }} className="text-xl font-semibold mb-4">Create New Event</h2>
+                            <form onSubmit={handleCreateEvent} className="space-y-4">
+                                <div>
+                                    <label style={{ color: textColor }} className="block text-sm font-medium mb-2">Event Name</label>
+                                    <input
+                                        type="text"
+                                        value={newEvent.name}
+                                        onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })}
+                                        style={{ borderColor: '#D1D5DB', color: textColor }}
+                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+                                        placeholder="Enter event name"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ color: textColor }} className="block text-sm font-medium mb-2">Description</label>
+                                    <textarea
+                                        value={newEvent.description}
+                                        onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                                        style={{ borderColor: '#D1D5DB', color: textColor }}
+                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+                                        rows="3"
+                                        placeholder="Event description"
+                                        required
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label style={{ color: textColor }} className="block text-sm font-medium mb-2">Date</label>
+                                        <input
+                                            type="date"
+                                            value={newEvent.date}
+                                            onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+                                            style={{ borderColor: '#D1D5DB', color: textColor }}
+                                            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ color: textColor }} className="block text-sm font-medium mb-2">Time</label>
+                                        <input
+                                            type="time"
+                                            value={newEvent.time}
+                                            onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
+                                            style={{ borderColor: '#D1D5DB', color: textColor }}
+                                            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style={{ color: textColor }} className="block text-sm font-medium mb-2">Venue</label>
+                                    <input
+                                        type="text"
+                                        value={newEvent.venue}
+                                        onChange={(e) => setNewEvent({ ...newEvent, venue: e.target.value })}
+                                        style={{ borderColor: '#D1D5DB', color: textColor }}
+                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+                                        placeholder="Event venue"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ color: textColor }} className="block text-sm font-medium mb-2">Select Club</label>
+                                    <select
+                                        value={newEvent.clubId}
+                                        onChange={(e) => setNewEvent({ ...newEvent, clubId: e.target.value })}
+                                        style={{ borderColor: '#D1D5DB', color: textColor }}
+                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+                                        required
+                                    >
+                                        <option value="">Select a club</option>
+                                        {myClubs.map(club => (
+                                            <option key={club.id} value={club.id}>{club.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <button
+                                    type="submit"
+                                    style={{ backgroundColor: primaryColor }}
+                                    className="btn-primary text-white px-6 py-2 rounded-lg font-medium"
+                                >
+                                    Submit for Approval
+                                </button>
+                            </form>
+                        </div>
+
+                        <h2 style={{ color: textColor }} className="text-xl font-semibold mb-4">My Events</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {events.filter(e => myClubs.some(c => c.id === e.clubId)).map(event => (
+                                <div key={event.id} style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md p-6">
+                                    <h3 style={{ color: textColor }} className="text-lg font-semibold mb-2">{event.name}</h3>
+                                    <p style={{ color: secondaryColor }} className="text-sm mb-3">{event.description}</p>
+                                    <div style={{ color: secondaryColor }} className="text-sm space-y-1">
+                                        <p>📅 {event.date} at {event.time}</p>
+                                        <p>📍 {event.venue}</p>
+                                        <p>👥 Registrations: {event.registrations?.length || 0}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            }
+
+            if (currentView === 'announcements') {
+                return (
+                    <div className="p-6 fade-in">
+                        <h1 style={{ color: textColor }} className="text-3xl font-bold mb-6">Announcements</h1>
+
+                        <div style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md p-6 mb-8 max-w-2xl">
+                            <h2 style={{ color: textColor }} className="text-xl font-semibold mb-4">Create Club Announcement</h2>
+                            <form onSubmit={handleCreateAnnouncement} className="space-y-4">
+                                <div>
+                                    <label style={{ color: textColor }} className="block text-sm font-medium mb-2">Select Club</label>
+                                    <select
+                                        value={newAnnouncement.clubId}
+                                        onChange={(e) => setNewAnnouncement({ ...newAnnouncement, clubId: e.target.value })}
+                                        style={{ borderColor: '#D1D5DB', color: textColor }}
+                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+                                        required
+                                    >
+                                        <option value="">Select a club</option>
+                                        {myClubs.map(club => (
+                                            <option key={club.id} value={club.id}>{club.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style={{ color: textColor }} className="block text-sm font-medium mb-2">Title</label>
+                                    <input
+                                        type="text"
+                                        value={newAnnouncement.title}
+                                        onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
+                                        style={{ borderColor: '#D1D5DB', color: textColor }}
+                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+                                        placeholder="Announcement title"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ color: textColor }} className="block text-sm font-medium mb-2">Content</label>
+                                    <textarea
+                                        value={newAnnouncement.content}
+                                        onChange={(e) => setNewAnnouncement({ ...newAnnouncement, content: e.target.value })}
+                                        style={{ borderColor: '#D1D5DB', color: textColor }}
+                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+                                        rows="4"
+                                        placeholder="Announcement content"
+                                        required
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    style={{ backgroundColor: primaryColor }}
+                                    className="btn-primary text-white px-6 py-2 rounded-lg font-medium"
+                                >
+                                    Post Announcement
+                                </button>
+                            </form>
+                        </div>
+
+                        <h2 style={{ color: textColor }} className="text-xl font-semibold mb-4">My Announcements</h2>
+                        <div className="space-y-4">
+                            {announcements
+                                .filter(ann => ann.author === currentUser.name)
+                                .map(ann => (
+                                    <div key={ann.id} style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md p-6">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h3 style={{ color: textColor }} className="text-lg font-semibold">{ann.title}</h3>
+                                            <span
+                                                style={{ backgroundColor: '#FEF3C7', color: '#92400E' }}
+                                                className="text-xs px-2 py-1 rounded"
+                                            >
+                                                {ann.type}
+                                            </span>
+                                        </div>
+                                        <p style={{ color: secondaryColor }} className="text-sm mb-3">{ann.content}</p>
+                                        <p style={{ color: secondaryColor }} className="text-xs">
+                                            {new Date(ann.date).toLocaleDateString()}
+                                        </p>
+                                    </div>
+                                ))}
+                        </div>
+                    </div>
+                );
+            }
+
+            if (currentView === 'chat') {
+                return (
+                    <div className="p-6 fade-in">
+                        <h1 style={{ color: textColor }} className="text-3xl font-bold mb-6">Club Chat Rooms</h1>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md p-4">
+                                <h2 style={{ color: textColor }} className="text-lg font-semibold mb-4">My Clubs</h2>
+                                <div className="space-y-2">
+                                    {myClubs.map(club => (
+                                        <button
+                                            key={club.id}
+                                            onClick={() => setSelectedClub(club)}
+                                            style={{
+                                                backgroundColor: selectedClub?.id === club.id ? backgroundColor : 'transparent',
+                                                color: textColor
+                                            }}
+                                            className="w-full text-left px-4 py-3 rounded-lg font-medium hover:bg-opacity-50 transition-colors"
+                                        >
+                                            {club.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="lg:col-span-2">
+                                {selectedClub ? (
+                                    <div style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md flex flex-col" style={{ height: '500px' }}>
+                                        <div style={{ borderBottom: '1px solid #E5E7EB' }} className="p-4">
+                                            <h2 style={{ color: textColor }} className="text-lg font-semibold">{selectedClub.name} Chat</h2>
+                                            <p style={{ color: secondaryColor }} className="text-xs">{selectedClub.members?.length || 0} members</p>
+                                        </div>
+
+                                        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                                            {(chatMessages[selectedClub.id] || []).map(msg => (
+                                                <div key={msg.id} className="chat-message">
+                                                    <div style={{ backgroundColor: backgroundColor }} className="p-3 rounded-lg">
+                                                        <div className="flex justify-between items-start mb-1">
+                                                            <span style={{ color: primaryColor }} className="text-sm font-semibold">{msg.user}</span>
+                                                            <span style={{ color: secondaryColor }} className="text-xs">
+                                                                {new Date(msg.timestamp).toLocaleTimeString()}
+                                                            </span>
+                                                        </div>
+                                                        <p style={{ color: textColor }} className="text-sm">{msg.message}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <form onSubmit={(e) => handleSendMessage(e, selectedClub.id)} className="p-4 border-t">
+                                            <div className="flex space-x-2">
+                                                <input
+                                                    type="text"
+                                                    value={newMessage}
+                                                    onChange={(e) => setNewMessage(e.target.value)}
+                                                    style={{ borderColor: '#D1D5DB', color: textColor }}
+                                                    className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+                                                    placeholder="Type a message..."
+                                                    required
+                                                />
+                                                <button
+                                                    type="submit"
+                                                    style={{ backgroundColor: primaryColor }}
+                                                    className="btn-primary text-white px-6 py-2 rounded-lg font-medium"
+                                                >
+                                                    Send
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                ) : (
+                                    <div style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md p-12 text-center">
+                                        <p style={{ color: secondaryColor }}>Select a club to view its chat room</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return null;
+        };
+
+        // Student Dashboard
+        const StudentDashboard = ({ currentView, currentUser }) => {
+            const [clubs, setClubs] = useState([]);
+            const [myClubs, setMyClubs] = useState([]);
+            const [events, setEvents] = useState([]);
+            const [announcements, setAnnouncements] = useState([]);
+            const [chatMessages, setChatMessages] = useState({});
+            const [selectedClub, setSelectedClub] = useState(null);
+            const [newMessage, setNewMessage] = useState('');
+
+            const primaryColor = appConfig.primary_color || defaultConfig.primary_color;
+            const backgroundColor = appConfig.background_color || defaultConfig.background_color;
+            const surfaceColor = appConfig.surface_color || defaultConfig.surface_color;
+            const textColor = appConfig.text_color || defaultConfig.text_color;
+            const secondaryColor = appConfig.secondary_color || defaultConfig.secondary_color;
+
+            useEffect(() => {
+                loadData();
+            }, [currentView]);
+
+            const loadData = () => {
+                const allClubs = JSON.parse(localStorage.getItem('clubx_clubs') || '[]');
+                const studentClubs = allClubs.filter(c => c.members?.includes(currentUser.id));
+                setClubs(allClubs);
+                setMyClubs(studentClubs);
+                setEvents(JSON.parse(localStorage.getItem('clubx_events') || '[]'));
+                setAnnouncements(JSON.parse(localStorage.getItem('clubx_announcements') || '[]'));
+                setChatMessages(JSON.parse(localStorage.getItem('clubx_chatMessages') || '{}'));
+            };
+
+            const handleJoinClub = (clubId) => {
+                const allClubs = JSON.parse(localStorage.getItem('clubx_clubs') || '[]');
+                const clubIndex = allClubs.findIndex(c => c.id === clubId);
+                if (clubIndex > -1) {
+                    if (!allClubs[clubIndex].joinRequests) allClubs[clubIndex].joinRequests = [];
+                    if (!allClubs[clubIndex].joinRequests.includes(currentUser.id)) {
+                        allClubs[clubIndex].joinRequests.push(currentUser.id);
+                        localStorage.setItem('clubx_clubs', JSON.stringify(allClubs));
+                        loadData();
+                    }
+                }
+            };
+
+            const handleRegisterEvent = (eventId) => {
+                const allEvents = JSON.parse(localStorage.getItem('clubx_events') || '[]');
+                const eventIndex = allEvents.findIndex(e => e.id === eventId);
+                if (eventIndex > -1) {
+                    if (!allEvents[eventIndex].registrations) allEvents[eventIndex].registrations = [];
+                    if (!allEvents[eventIndex].registrations.includes(currentUser.id)) {
+                        allEvents[eventIndex].registrations.push(currentUser.id);
+                        localStorage.setItem('clubx_events', JSON.stringify(allEvents));
+                        loadData();
+                    }
+                }
+            };
+
+            const handleUnregisterEvent = (eventId) => {
+                const allEvents = JSON.parse(localStorage.getItem('clubx_events') || '[]');
+                const eventIndex = allEvents.findIndex(e => e.id === eventId);
+                if (eventIndex > -1) {
+                    allEvents[eventIndex].registrations = allEvents[eventIndex].registrations?.filter(id => id !== currentUser.id) || [];
+                    localStorage.setItem('clubx_events', JSON.stringify(allEvents));
+                    loadData();
+                }
+            };
+
+            const handleSendMessage = (e, clubId) => {
+                e.preventDefault();
+                if (!newMessage.trim()) return;
+
+                const messages = JSON.parse(localStorage.getItem('clubx_chatMessages') || '{}');
+                if (!messages[clubId]) messages[clubId] = [];
+
+                const newMsg = {
+                    id: Date.now(),
+                    user: currentUser.name,
+                    message: newMessage,
+                    timestamp: new Date().toISOString()
+                };
+
+                messages[clubId].push(newMsg);
+                localStorage.setItem('clubx_chatMessages', JSON.stringify(messages));
+                setNewMessage('');
+                loadData();
+            };
+
+            if (currentView === 'dashboard') {
+                const myEvents = events.filter(e => e.registrations?.includes(currentUser.id));
+                const relevantAnnouncements = announcements.filter(
+                    ann => ann.type === 'global' || myClubs.some(c => c.id === ann.clubId)
+                ).slice(0, 3);
+
+                return (
+                    <div className="p-6 fade-in">
+                        <h1 style={{ color: textColor }} className="text-3xl font-bold mb-6">Student Dashboard</h1>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <div style={{ backgroundColor: surfaceColor }} className="card-hover rounded-xl shadow-lg p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div style={{ backgroundColor: primaryColor }} className="w-12 h-12 rounded-lg flex items-center justify-center">
+                                        <span className="text-white text-2xl">📚</span>
+                                    </div>
+                                    <span style={{ color: textColor }} className="text-3xl font-bold">{myClubs.length}</span>
+                                </div>
+                                <h3 style={{ color: textColor }} className="font-semibold">Joined Clubs</h3>
+                                <p style={{ color: secondaryColor }} className="text-sm">My club memberships</p>
+                            </div>
+
+                            <div style={{ backgroundColor: surfaceColor }} className="card-hover rounded-xl shadow-lg p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div style={{ backgroundColor: '#10B981' }} className="w-12 h-12 rounded-lg flex items-center justify-center">
+                                        <span className="text-white text-2xl">📅</span>
+                                    </div>
+                                    <span style={{ color: textColor }} className="text-3xl font-bold">{myEvents.length}</span>
+                                </div>
+                                <h3 style={{ color: textColor }} className="font-semibold">Registered Events</h3>
+                                <p style={{ color: secondaryColor }} className="text-sm">Upcoming events</p>
+                            </div>
+
+                            <div style={{ backgroundColor: surfaceColor }} className="card-hover rounded-xl shadow-lg p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div style={{ backgroundColor: '#F59E0B' }} className="w-12 h-12 rounded-lg flex items-center justify-center">
+                                        <span className="text-white text-2xl">📢</span>
+                                    </div>
+                                    <span style={{ color: textColor }} className="text-3xl font-bold">{relevantAnnouncements.length}</span>
+                                </div>
+                                <h3 style={{ color: textColor }} className="font-semibold">New Announcements</h3>
+                                <p style={{ color: secondaryColor }} className="text-sm">Latest updates</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div>
+                                <h2 style={{ color: textColor }} className="text-xl font-semibold mb-4">My Clubs</h2>
+                                <div className="space-y-4">
+                                    {myClubs.map(club => (
+                                        <div key={club.id} style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md p-4">
+                                            <h3 style={{ color: textColor }} className="font-semibold mb-1">{club.name}</h3>
+                                            <p style={{ color: secondaryColor }} className="text-sm">{club.description}</p>
+                                        </div>
+                                    ))}
+                                    {myClubs.length === 0 && (
+                                        <p style={{ color: secondaryColor }} className="text-sm text-center py-8">You haven't joined any clubs yet</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div>
+                                <h2 style={{ color: textColor }} className="text-xl font-semibold mb-4">Latest Announcements</h2>
+                                <div className="space-y-4">
+                                    {relevantAnnouncements.map(ann => (
+                                        <div key={ann.id} style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md p-4">
+                                            <h3 style={{ color: textColor }} className="font-semibold text-sm mb-1">{ann.title}</h3>
+                                            <p style={{ color: secondaryColor }} className="text-xs mb-2">{ann.content}</p>
+                                            <span
+                                                style={{
+                                                    backgroundColor: ann.type === 'global' ? '#DBEAFE' : '#FEF3C7',
+                                                    color: ann.type === 'global' ? '#1E40AF' : '#92400E'
+                                                }}
+                                                className="text-xs px-2 py-1 rounded"
+                                            >
+                                                {ann.type}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (currentView === 'clubs') {
+                return (
+                    <div className="p-6 fade-in">
+                        <h1 style={{ color: textColor }} className="text-3xl font-bold mb-6">Browse Clubs</h1>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {clubs.filter(c => c.status === 'active').map(club => {
+                                const isMember = club.members?.includes(currentUser.id);
+                                const hasPendingRequest = club.joinRequests?.includes(currentUser.id);
+
+                                return (
+                                    <div key={club.id} style={{ backgroundColor: surfaceColor }} className="card-hover rounded-lg shadow-md p-6">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <h3 style={{ color: textColor }} className="text-lg font-semibold">{club.name}</h3>
+                                            <span className="text-2xl">🏛️</span>
+                                        </div>
+                                        <p style={{ color: secondaryColor }} className="text-sm mb-4">{club.description}</p>
+                                        <p style={{ color: secondaryColor }} className="text-xs mb-4">Members: {club.members?.length || 0}</p>
+
+                                        {isMember ? (
+                                            <div style={{ backgroundColor: '#D1FAE5', color: '#065F46' }} className="text-center py-2 rounded-lg text-sm font-medium">
+                                                ✓ Member
+                                            </div>
+                                        ) : hasPendingRequest ? (
+                                            <div style={{ backgroundColor: '#FEF3C7', color: '#92400E' }} className="text-center py-2 rounded-lg text-sm font-medium">
+                                                ⏳ Request Pending
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={() => handleJoinClub(club.id)}
+                                                style={{ backgroundColor: primaryColor }}
+                                                className="btn-primary w-full text-white py-2 rounded-lg text-sm font-medium"
+                                            >
+                                                Request to Join
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                );
+            }
+
+            if (currentView === 'myClubs') {
+                return (
+                    <div className="p-6 fade-in">
+                        <h1 style={{ color: textColor }} className="text-3xl font-bold mb-6">My Clubs</h1>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {myClubs.map(club => (
+                                <div key={club.id} style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md p-6">
+                                    <h3 style={{ color: textColor }} className="text-lg font-semibold mb-2">{club.name}</h3>
+                                    <p style={{ color: secondaryColor }} className="text-sm mb-4">{club.description}</p>
+                                    <div style={{ color: secondaryColor }} className="text-xs space-y-1">
+                                        <p>👥 Members: {club.members?.length || 0}</p>
+                                        <p>👤 Coordinator: {club.coordinator}</p>
+                                    </div>
+                                </div>
+                            ))}
+                            {myClubs.length === 0 && (
+                                <div className="col-span-2">
+                                    <p style={{ color: secondaryColor }} className="text-center py-12">You haven't joined any clubs yet</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            }
+
+            if (currentView === 'events') {
+                return (
+                    <div className="p-6 fade-in">
+                        <h1 style={{ color: textColor }} className="text-3xl font-bold mb-6">Events</h1>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {events.map(event => {
+                                const isRegistered = event.registrations?.includes(currentUser.id);
+
+                                return (
+                                    <div key={event.id} style={{ backgroundColor: surfaceColor }} className="card-hover rounded-lg shadow-md p-6">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <h3 style={{ color: textColor }} className="text-lg font-semibold">{event.name}</h3>
+                                            {isRegistered && (
+                                                <span style={{ backgroundColor: '#D1FAE5', color: '#065F46' }} className="badge text-xs px-2 py-1 rounded">
+                                                    Registered
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p style={{ color: secondaryColor }} className="text-sm mb-3">{event.description}</p>
+                                        <div style={{ color: secondaryColor }} className="text-sm space-y-1 mb-4">
+                                            <p>📅 {event.date} at {event.time}</p>
+                                            <p>📍 {event.venue}</p>
+                                            <p>👥 {event.registrations?.length || 0} registered</p>
+                                        </div>
+
+                                        {isRegistered ? (
+                                            <button
+                                                onClick={() => handleUnregisterEvent(event.id)}
+                                                style={{ backgroundColor: backgroundColor, color: textColor, border: '1px solid #D1D5DB' }}
+                                                className="w-full py-2 rounded-lg text-sm font-medium"
+                                            >
+                                                Unregister
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => handleRegisterEvent(event.id)}
+                                                style={{ backgroundColor: primaryColor }}
+                                                className="btn-primary w-full text-white py-2 rounded-lg text-sm font-medium"
+                                            >
+                                                Register
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                );
+            }
+
+            if (currentView === 'announcements') {
+                const relevantAnnouncements = announcements.filter(
+                    ann => ann.type === 'global' || myClubs.some(c => c.id === ann.clubId)
+                );
+
+                return (
+                    <div className="p-6 fade-in">
+                        <h1 style={{ color: textColor }} className="text-3xl font-bold mb-6">Announcements</h1>
+                        <div className="max-w-3xl space-y-4">
+                            {relevantAnnouncements.map(ann => (
+                                <div key={ann.id} style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md p-6">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h3 style={{ color: textColor }} className="text-lg font-semibold">{ann.title}</h3>
+                                        <span
+                                            style={{
+                                                backgroundColor: ann.type === 'global' ? '#DBEAFE' : '#FEF3C7',
+                                                color: ann.type === 'global' ? '#1E40AF' : '#92400E'
+                                            }}
+                                            className="text-xs px-2 py-1 rounded"
+                                        >
+                                            {ann.type}
+                                        </span>
+                                    </div>
+                                    <p style={{ color: secondaryColor }} className="text-sm mb-3">{ann.content}</p>
+                                    <div style={{ color: secondaryColor }} className="text-xs flex justify-between">
+                                        <span>By: {ann.author}</span>
+                                        <span>{new Date(ann.date).toLocaleDateString()}</span>
+                                    </div>
+                                </div>
+                            ))}
+                            {relevantAnnouncements.length === 0 && (
+                                <p style={{ color: secondaryColor }} className="text-center py-12">No announcements available</p>
+                            )}
+                        </div>
+                    </div>
+                );
+            }
+
+            if (currentView === 'chat') {
+                return (
+                    <div className="p-6 fade-in">
+                        <h1 style={{ color: textColor }} className="text-3xl font-bold mb-6">Club Chat Rooms</h1>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md p-4">
+                                <h2 style={{ color: textColor }} className="text-lg font-semibold mb-4">My Clubs</h2>
+                                <div className="space-y-2">
+                                    {myClubs.map(club => (
+                                        <button
+                                            key={club.id}
+                                            onClick={() => setSelectedClub(club)}
+                                            style={{
+                                                backgroundColor: selectedClub?.id === club.id ? backgroundColor : 'transparent',
+                                                color: textColor
+                                            }}
+                                            className="w-full text-left px-4 py-3 rounded-lg font-medium hover:bg-opacity-50 transition-colors"
+                                        >
+                                            {club.name}
+                                        </button>
+                                    ))}
+                                    {myClubs.length === 0 && (
+                                        <p style={{ color: secondaryColor }} className="text-sm text-center py-4">Join clubs to access chat</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="lg:col-span-2">
+                                {selectedClub ? (
+                                    <div style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md flex flex-col" style={{ height: '500px' }}>
+                                        <div style={{ borderBottom: '1px solid #E5E7EB' }} className="p-4">
+                                            <h2 style={{ color: textColor }} className="text-lg font-semibold">{selectedClub.name} Chat</h2>
+                                            <p style={{ color: secondaryColor }} className="text-xs">{selectedClub.members?.length || 0} members</p>
+                                        </div>
+
+                                        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                                            {(chatMessages[selectedClub.id] || []).map(msg => (
+                                                <div key={msg.id} className="chat-message">
+                                                    <div style={{ backgroundColor: backgroundColor }} className="p-3 rounded-lg">
+                                                        <div className="flex justify-between items-start mb-1">
+                                                            <span style={{ color: primaryColor }} className="text-sm font-semibold">{msg.user}</span>
+                                                            <span style={{ color: secondaryColor }} className="text-xs">
+                                                                {new Date(msg.timestamp).toLocaleTimeString()}
+                                                            </span>
+                                                        </div>
+                                                        <p style={{ color: textColor }} className="text-sm">{msg.message}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <form onSubmit={(e) => handleSendMessage(e, selectedClub.id)} className="p-4 border-t">
+                                            <div className="flex space-x-2">
+                                                <input
+                                                    type="text"
+                                                    value={newMessage}
+                                                    onChange={(e) => setNewMessage(e.target.value)}
+                                                    style={{ borderColor: '#D1D5DB', color: textColor }}
+                                                    className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+                                                    placeholder="Type a message..."
+                                                    required
+                                                />
+                                                <button
+                                                    type="submit"
+                                                    style={{ backgroundColor: primaryColor }}
+                                                    className="btn-primary text-white px-6 py-2 rounded-lg font-medium"
+                                                >
+                                                    Send
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                ) : (
+                                    <div style={{ backgroundColor: surfaceColor }} className="rounded-lg shadow-md p-12 text-center">
+                                        <p style={{ color: secondaryColor }}>Select a club to view its chat room</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return null;
+        };
+
+        // Main App Component
+        const App = () => {
+            const [currentUser, setCurrentUser] = useState(null);
+            const [currentView, setCurrentView] = useState('dashboard');
+
+            useEffect(() => {
+                initializeLocalStorage();
+                const savedUser = localStorage.getItem('clubx_currentUser');
+                if (savedUser) {
+                    setCurrentUser(JSON.parse(savedUser));
+                }
+            }, []);
+
+            const handleLogin = (user) => {
+                setCurrentUser(user);
+                setCurrentView('dashboard');
+            };
+
+            const handleLogout = () => {
+                localStorage.removeItem('clubx_currentUser');
+                setCurrentUser(null);
+                setCurrentView('dashboard');
+            };
+
+            const backgroundColor = appConfig.background_color || defaultConfig.background_color;
+
+            if (!currentUser) {
+                return <Login onLogin={handleLogin} />;
+            }
+
+            return (
+                <div style={{ backgroundColor, minHeight: '100%', width: '100%' }} className="flex">
+                    <Sidebar role={currentUser.role} currentView={currentView} onNavigate={setCurrentView} />
+                    <div className="flex-1 overflow-auto">
+                        {currentUser.role === 'admin' && (
+                            <AdminDashboard currentView={currentView} onNavigate={setCurrentView} />
+                        )}
+                        {currentUser.role === 'coordinator' && (
+                            <CoordinatorDashboard currentView={currentView} currentUser={currentUser} />
+                        )}
+                        {currentUser.role === 'student' && (
+                            <StudentDashboard currentView={currentView} currentUser={currentUser} />
+                        )}
+                        
+                        <div className="p-6">
+                            <button
+                                onClick={handleLogout}
+                                style={{ color: appConfig.secondary_color || defaultConfig.secondary_color }}
+                                className="text-sm hover:underline"
+                            >
+                                ← Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Element SDK Integration
+        async function onConfigChange(newConfig) {
+            appConfig = { ...newConfig };
+            const root = document.getElementById('root');
+            if (root) {
+                ReactDOM.render(<App />, root);
+            }
+        }
+
+        function mapToCapabilities(config) {
+            return {
+                recolorables: [
+                    {
+                        get: () => config.primary_color || defaultConfig.primary_color,
+                        set: (value) => {
+                            config.primary_color = value;
+                            window.elementSdk.setConfig({ primary_color: value });
+                        }
+                    },
+                    {
+                        get: () => config.background_color || defaultConfig.background_color,
+                        set: (value) => {
+                            config.background_color = value;
+                            window.elementSdk.setConfig({ background_color: value });
+                        }
+                    },
+                    {
+                        get: () => config.surface_color || defaultConfig.surface_color,
+                        set: (value) => {
+                            config.surface_color = value;
+                            window.elementSdk.setConfig({ surface_color: value });
+                        }
+                    },
+                    {
+                        get: () => config.text_color || defaultConfig.text_color,
+                        set: (value) => {
+                            config.text_color = value;
+                            window.elementSdk.setConfig({ text_color: value });
+                        }
+                    },
+                    {
+                        get: () => config.secondary_color || defaultConfig.secondary_color,
+                        set: (value) => {
+                            config.secondary_color = value;
+                            window.elementSdk.setConfig({ secondary_color: value });
+                        }
+                    }
+                ],
+                borderables: [],
+                fontEditable: undefined,
+                fontSizeable: undefined
+            };
+        }
+
+        function mapToEditPanelValues(config) {
+            return new Map([
+                ["app_title", config.app_title || defaultConfig.app_title],
+                ["app_tagline", config.app_tagline || defaultConfig.app_tagline],
+                ["admin_hint", config.admin_hint || defaultConfig.admin_hint],
+                ["coordinator_hint", config.coordinator_hint || defaultConfig.coordinator_hint],
+                ["student_hint", config.student_hint || defaultConfig.student_hint]
+            ]);
+        }
+
+        if (window.elementSdk) {
+            window.elementSdk.init({
+                defaultConfig,
+                onConfigChange,
+                mapToCapabilities,
+                mapToEditPanelValues
+            });
+        }
+
+        // Initial Render
+        const root = document.getElementById('root');
+        ReactDOM.render(<App />, root);
+    </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c1ca61376def3d0',t:'MTc2OTA1OTcxNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
