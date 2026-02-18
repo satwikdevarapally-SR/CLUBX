@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClubX Register</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Poppins', sans-serif;
+}
+
+body{
+    background:#0f3d3e;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+
+.container{
+    width:1000px;
+    height:700px;
+    display:flex;
+    border-radius:25px;
+    overflow:hidden;
+    background:#f3f3f3;
+}
+
+.left{
+    width:50%;
+    padding:50px;
+}
+
+.logo{
+    font-size:22px;
+    font-weight:600;
+    color:#0f3d3e;
+    margin-bottom:40px;
+}
+
+h1{
+    font-size:28px;
+    margin-bottom:10px;
+}
+
+.subtitle{
+    color:#666;
+    font-size:14px;
+    margin-bottom:30px;
+}
+
+.role-container{
+    display:flex;
+    gap:15px;
+    margin-bottom:25px;
+}
+
+.role-btn{
+    flex:1;
+    padding:12px;
+    border:2px solid #d3d3d3;
+    background:#f5f5f5;
+    border-radius:12px;
+    cursor:pointer;
+    font-weight:500;
+}
+
+.role-btn.active{
+    border-color:#0f3d3e;
+    background:#dfeeee;
+}
+
+.input-group{
+    margin-bottom:18px;
+}
+
+.input-group input{
+    width:100%;
+    padding:14px;
+    border-radius:10px;
+    border:1px solid #c8c8a8;
+    background:#e7e4b7;
+    outline:none;
+}
+
+.register-btn{
+    width:100%;
+    padding:14px;
+    background:#0f3d3e;
+    color:white;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+}
+
+.back-btn{
+    width:100%;
+    padding:14px;
+    background:transparent;
+    border:2px solid #0f3d3e;
+    border-radius:10px;
+    margin-top:15px;
+    cursor:pointer;
+}
+
+.back-btn:hover{
+    background:#0f3d3e;
+    color:white;
+}
+
+.right{
+    width:50%;
+    background:url('https://images.unsplash.com/photo-1501785888041-af3ef285b470') no-repeat center center/cover;
+}
+
+@media(max-width:900px){
+    .container{flex-direction:column;width:90%;height:auto;}
+    .left,.right{width:100%;}
+    .right{height:250px;}
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="left">
+    <div class="logo">ClubX</div>
+
+    <h1>Create Account</h1>
+    <div class="subtitle">Fill the details below to register.</div>
+
+    <div class="role-container">
+        <button class="role-btn active" onclick="selectRole(this)">Admin</button>
+        <button class="role-btn" onclick="selectRole(this)">Co-ordinator</button>
+        <button class="role-btn" onclick="selectRole(this)">Student</button>
+    </div>
+
+    <div class="input-group">
+        <input type="text" placeholder="Full Name">
+    </div>
+
+    <div class="input-group">
+        <input type="email" placeholder="Email Address">
+    </div>
+
+    <div class="input-group">
+        <input type="password" placeholder="Create Password">
+    </div>
+
+    <div class="input-group">
+        <input type="password" placeholder="Confirm Password">
+    </div>
+
+    <button class="register-btn">Register</button>
+
+    <button class="back-btn" onclick="goToLogin()">Back to Login</button>
+</div>
+
+<div class="right"></div>
+
+</div>
+
+<script>
+function selectRole(button){
+    document.querySelectorAll(".role-btn").forEach(btn=>btn.classList.remove("active"));
+    button.classList.add("active");
+}
+
+function goToLogin(){
+    window.location.href = "login.html";
+}
+</script>
+
+</body>
+</html>
