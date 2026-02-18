@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClubX Login</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body{
+    background:#0f3d3e;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+
+/* Main Container */
+.container{
+    width:1000px;
+    height:600px;
+    display:flex;
+    border-radius:25px;
+    overflow:hidden;
+    background:#f3f3f3;
+}
+
+/* Left Section */
+.left{
+    width:50%;
+    padding:50px;
+}
+
+.logo{
+    font-size:22px;
+    font-weight:600;
+    color:#0f3d3e;
+    margin-bottom:40px;
+}
+
+h1{
+    font-size:28px;
+    margin-bottom:10px;
+}
+
+.subtitle{
+    color:#666;
+    font-size:14px;
+    margin-bottom:30px;
+}
+
+/* Role Buttons */
+.role-container{
+    display:flex;
+    gap:15px;
+    margin-bottom:25px;
+}
+
+.role-btn{
+    flex:1;
+    padding:12px;
+    border:2px solid #d3d3d3;
+    background:#f5f5f5;
+    border-radius:12px;
+    cursor:pointer;
+    font-weight:500;
+    transition:0.3s;
+}
+
+.role-btn.active{
+    border-color:#0f3d3e;
+    background:#dfeeee;
+}
+
+/* Inputs */
+.input-group{
+    margin-bottom:18px;
+}
+
+.input-group input{
+    width:100%;
+    padding:14px;
+    border-radius:10px;
+    border:1px solid #c8c8a8;
+    background:#e7e4b7;
+    outline:none;
+    font-size:14px;
+}
+
+.input-group input:focus{
+    border-color:#0f3d3e;
+}
+
+/* Options */
+.options{
+    display:flex;
+    justify-content:space-between;
+    font-size:13px;
+    margin-bottom:25px;
+}
+
+.options a{
+    text-decoration:none;
+    color:#0f3d3e;
+}
+
+/* Buttons */
+.login-btn{
+    width:100%;
+    padding:14px;
+    background:#0f3d3e;
+    color:white;
+    border:none;
+    border-radius:10px;
+    font-size:15px;
+    font-weight:500;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+.login-btn:hover{
+    background:#145a5b;
+}
+
+.create-btn{
+    width:100%;
+    padding:14px;
+    background:transparent;
+    border:2px solid #0f3d3e;
+    border-radius:10px;
+    font-size:15px;
+    margin-top:15px;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+.create-btn:hover{
+    background:#0f3d3e;
+    color:white;
+}
+
+/* Right Section */
+.right{
+    width:50%;
+    background:url('https://images.unsplash.com/photo-1501785888041-af3ef285b470') no-repeat center center/cover;
+}
+
+/* Responsive */
+@media(max-width:900px){
+    .container{
+        flex-direction:column;
+        width:90%;
+        height:auto;
+    }
+
+    .left, .right{
+        width:100%;
+    }
+
+    .right{
+        height:250px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="left">
+        <div class="logo">ClubX</div>
+
+        <h1>Welcome Back!</h1>
+        <div class="subtitle">Please login to your account.</div>
+
+        <!-- Role Selection -->
+        <div class="role-container">
+            <button class="role-btn active" onclick="selectRole(this, 'Admin')">Admin</button>
+            <button class="role-btn" onclick="selectRole(this, 'Co-ordinator')">Co-ordinator</button>
+            <button class="role-btn" onclick="selectRole(this, 'Student')">Student</button>
+        </div>
+
+        <!-- Inputs -->
+        <div class="input-group">
+            <input type="email" id="email" placeholder="Enter email">
+        </div>
+
+        <div class="input-group">
+            <input type="password" id="password" placeholder="Enter password">
+        </div>
+
+        <div class="options">
+            <label><input type="checkbox"> Remember me</label>
+            <a href="#">Forgot password?</a>
+        </div>
+
+        <button class="login-btn" onclick="login()">Login</button>
+        <button class="create-btn">Create Account</button>
+
+    </div>
+
+    <div class="right"></div>
+
+</div>
+
+<script>
+
+let selectedRole = "Admin";
+
+function selectRole(button, role){
+    const buttons = document.querySelectorAll(".role-btn");
+    buttons.forEach(btn => btn.classList.remove("active"));
+    button.classList.add("active");
+    selectedRole = role;
+}
+
+function login(){
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    if(email === "" || password === ""){
+        alert("Please fill all fields");
+        return;
+    }
+
+    alert("Logging in as " + selectedRole + "\nEmail: " + email);
+}
+
+</script>
+
+</body>
+</html>
